@@ -1,23 +1,46 @@
 package com.example.recyclerapp;
 
+import android.app.Dialog;
+import android.content.DialogInterface;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.text.Html;
+import android.view.View;
+import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.recyclerapp.Model.AdapterFruit;
 import com.example.recyclerapp.Model.FruitItem;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
     private RecyclerView rvFruits;
+    private AdapterFruit adapter;
+    private ArrayList<FruitItem> arrayList;
+    private int positionFruit;
+    private FruitItem fruitItemRemove;
+    private ActionBar actionBar;
+    private FloatingActionButton faAddFruit;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -29,16 +52,180 @@ public class MainActivity extends AppCompatActivity {
 
     private void initViews()
     {
+        actionBar = getSupportActionBar();
         rvFruits = findViewById(R.id.rvFruits);
+        ItemTouchHelper.SimpleCallback callback = new ItemTouchHelper.SimpleCallback(
+                ItemTouchHelper.RIGHT,ItemTouchHelper.LEFT
+        ) {
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+
+                int position = viewHolder.getAdapterPosition();
+                positionFruit = position;
+                FruitItem fruitItem = arrayList.get(position);
+                fruitItemRemove = fruitItem;
+//                Snackbar snackbar = Snackbar
+//                        .make(rvFruits, "Fruit Remove", Snackbar.LENGTH_LONG)
+//                        .setAction("בטל", new View.OnClickListener() {
+//                            @Override
+//                            public void onClick(View view) {
+//                                arrayList.add(position, fruitItem);
+//                                adapter.notifyItemInserted(position);
+//                                //rvFruits.scrollToPosition(position);
+//                            }
+//                        });
+//                snackbar.show();
+                if(direction == ItemTouchHelper.LEFT)
+                {
+                    //adapter.notifyItemChanged(position);
+                    //arrayList.remove(position);
+                    //adapter.notifyItemRemoved(position);
+
+                    alertRemove();
+                }
+            }
+        };
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(callback);
+        itemTouchHelper.attachToRecyclerView(rvFruits);
+
+        faAddFruit = findViewById(R.id.faAddFruit);
+        faAddFruit.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                addFruit();
+            }
+        });
+
+
+        setTitle(Html.fromHtml("<font color='#FFFFFF'>RecyclerApp</font>"));
+        actionBar.setSubtitle(Html.fromHtml("<font color='#FFFFFF'>Swiped Alert Item</font>"));        // #######################
+        //   Keep The Screen 0n
+        // #######################
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    }
+
+    public void addFruit()
+    {
+        Dialog dialog = new Dialog(this);
+        dialog.setContentView(R.layout.custom_addfruit);
+        dialog.setTitle("Login");
+        dialog.setCancelable(false);
+        EditText etName = dialog.findViewById(R.id.etName);
+        EditText etDesc = dialog.findViewById(R.id.etDesc);
+        ImageView ivPhoto = dialog.findViewById(R.id.ivPhoto);
+        ivPhoto.setImageResource(R.drawable.tut);
+        ivPhoto.setTag(R.drawable.tut);
+
+        ImageView ivPhoto1 = dialog.findViewById(R.id.ivPhoto1);
+        ImageView ivPhoto2 = dialog.findViewById(R.id.ivPhoto2);
+        ImageView ivPhoto3 = dialog.findViewById(R.id.ivPhoto3);
+        ivPhoto1.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ivPhoto.setImageResource(R.drawable.afarsek);
+                ivPhoto.setTag(R.drawable.afarsek);
+            }
+        });
+        ivPhoto2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ivPhoto.setImageResource(R.drawable.tut);
+                ivPhoto.setTag(R.drawable.tut);
+            }
+        });
+        ivPhoto3.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ivPhoto.setImageResource(R.drawable.afarsemon);
+                ivPhoto.setTag(R.drawable.afarsemon);
+            }
+        });
+
+        Button btAdd = dialog.findViewById(R.id.btAdd);
+        Button btCancel = dialog.findViewById(R.id.btCancel);
+
+        btAdd.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String name = etName.getText().toString();
+                String desc = etDesc.getText().toString();
+                if(name.length() == 0 || desc.length() == 0)
+                {
+                     Toast.makeText(MainActivity.this,  "מלא פרטים", Toast.LENGTH_SHORT).show();
+                }
+                else {
+                    arrayList.add(new FruitItem(name, desc, (int) ivPhoto.getTag()));
+                    adapter.notifyItemChanged(arrayList.size() - 1);
+                    dialog.hide();
+                }
+            }
+        });
+        btCancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                dialog.hide();
+            }
+        });
+
+
+        dialog.show();
+
+    }
+
+    public void alertRemove()
+    {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);// מופע של בילדר
+        builder.setTitle("מחיקת פרי");
+        builder.setMessage("האם למחוק את הפרי?");
+        builder.setCancelable(false);
+        builder.setPositiveButton("מסכים", new RemoveItem());
+        builder.setNegativeButton("לא מסכים", new RemoveItem());
+        AlertDialog dialog = builder.create();// נפעיל את הבילדר ונחזיר רפרנס ל דיאלוג
+        dialog.show();
+        dialog.getButton(dialog.BUTTON_NEGATIVE).setTextColor(Color.RED);
+        dialog.getButton(dialog.BUTTON_POSITIVE).setTextColor(Color.BLUE);
+    }
+    private class RemoveItem implements DialogInterface.OnClickListener {
+        @Override
+        public void onClick(DialogInterface dialogInterface, int i) {
+            String msg = "לא מסכים";
+            adapter.notifyItemChanged(positionFruit);
+            if(i == -1)// msg = "מסכים";
+            {
+                Snackbar snackbar = Snackbar
+                        .make(rvFruits, "פרי נמחק", Snackbar.LENGTH_LONG)
+                        .setDuration(3000)
+                        .setBackgroundTint(Color.BLUE)
+                        .setTextColor(Color.WHITE)
+                        .setActionTextColor(Color.WHITE)
+                        .setAction("בטל פעולה", new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                arrayList.add(positionFruit, fruitItemRemove);
+                                adapter.notifyItemInserted(positionFruit);
+                                rvFruits.scrollToPosition(positionFruit);
+                            }
+                        });
+                snackbar.show();
+                arrayList.remove(positionFruit);
+                adapter.notifyItemRemoved(positionFruit);
+            }
+        }
     }
 
     public void showFrruits()
     {
-        ArrayList<FruitItem> arrayList = getArrayList();
-        AdapterFruit adapter = new AdapterFruit(arrayList);
+        arrayList = getArrayList();
+        adapter = new AdapterFruit(arrayList);
         rvFruits.setAdapter(adapter);
         rvFruits.setLayoutManager(new LinearLayoutManager(this));
     }
+
 
     private ArrayList<FruitItem> getArrayList()
     {
@@ -51,4 +238,6 @@ public class MainActivity extends AppCompatActivity {
 
         return arrayList;
     }
+
+
 }

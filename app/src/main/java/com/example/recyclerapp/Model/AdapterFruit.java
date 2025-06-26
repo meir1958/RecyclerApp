@@ -7,6 +7,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.recyclerapp.R;
@@ -43,10 +44,17 @@ public class AdapterFruit extends RecyclerView.Adapter<AdapterFruit.MyViewHolder
         if(!newFavorite)holder.ivHurt.setImageResource(R.drawable.hurt_white);
         else holder.ivHurt.setImageResource(R.drawable.hurt_red);
 
-
-        holder.itemView.setOnClickListener(new View.OnClickListener() {
+//        holder.itemView.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                boolean newFavorite = fruitItem.isFavorite();
+//                fruitItem.setFavorite(!newFavorite);
+//                notifyItemChanged(holder.getAdapterPosition());
+//            }
+//        });
+        holder.ivHurt.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onClick(View view) {
                 boolean newFavorite = fruitItem.isFavorite();
                 fruitItem.setFavorite(!newFavorite);
                 notifyItemChanged(holder.getAdapterPosition());
