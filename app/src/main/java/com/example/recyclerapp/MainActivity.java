@@ -35,22 +35,26 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.recyclerapp.DataBaseFolder.Fruit;
+import com.example.recyclerapp.DataBaseFolder.FruitDatabase;
 import com.example.recyclerapp.Model.AdapterFruit;
 import com.example.recyclerapp.Model.FruitItem;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
     private RecyclerView rvFruits;
     private AdapterFruit adapter;
-    private ArrayList<FruitItem> arrayList;
+    private List<Fruit> list;
     private int positionFruit;
-    private FruitItem fruitItemRemove;
+    private Fruit fruitRemove;
     private ActionBar actionBar;
     private FloatingActionButton faAddFruit;
+    private FruitDatabase database;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,6 +68,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void initViews()
     {
+        database = FruitDatabase.getDatabase(this);
         actionBar = getSupportActionBar();
         rvFruits = findViewById(R.id.rvFruits);
         ItemTouchHelper.SimpleCallback callback = new ItemTouchHelper.SimpleCallback(
@@ -80,8 +85,8 @@ public class MainActivity extends AppCompatActivity {
 
                 int position = viewHolder.getAdapterPosition();
                 positionFruit = position;
-                FruitItem fruitItem = arrayList.get(position);
-                fruitItemRemove = fruitItem;
+                Fruit fruit = list.get(position);
+                fruitRemove = fruit;
 //                Snackbar snackbar = Snackbar
 //                        .make(rvFruits, "Fruit Remove", Snackbar.LENGTH_LONG)
 //                        .setAction("בטל", new View.OnClickListener() {
@@ -105,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
                 {
                     //Toast.makeText(MainActivity.this,  "RIGHT", Toast.LENGTH_SHORT).show();
                     adapter.notifyItemChanged(position);
-                    moveRight(fruitItem);
+                    moveRight(fruit);
                 }
             }
         };
@@ -178,8 +183,15 @@ public class MainActivity extends AppCompatActivity {
                      Toast.makeText(MainActivity.this,  "מלא פרטים", Toast.LENGTH_SHORT).show();
                 }
                 else {
-                    arrayList.add(new FruitItem(name, desc, (int) ivPhoto.getTag()));
-                    adapter.notifyItemChanged(arrayList.size() - 1);
+                    Fruit fruit = new Fruit();
+                    fruit.setFruitName(name);
+                    fruit.setFruitDesc(desc);
+                    fruit.setFruitFavorit(false);
+                    fruit.setFruitPhoto(R.drawable.orange);
+                    database.fruitDao().insert(fruit);
+                   // arrayList.add(new FruitItem(name, desc, (int) ivPhoto.getTag()));
+                    adapter.notifyItemChanged(list.size() - 1);
+                    showFrruits();
                     dialog.hide();
                 }
             }
@@ -194,7 +206,7 @@ public class MainActivity extends AppCompatActivity {
         dialog.show();
 
     }
-    public void moveRight(FruitItem fruitItem)
+    public void moveRight(Fruit fruit)
     {
         Dialog dialog = new Dialog(this);
         dialog.setContentView(R.layout.custom_choose);
@@ -202,11 +214,11 @@ public class MainActivity extends AppCompatActivity {
         TextView tvName = dialog.findViewById(R.id.tvName);
         TextView tvDesc = dialog.findViewById(R.id.tvDesc);
         ImageView ivPhoto = dialog.findViewById(R.id.ivPhoto);
-        ivPhoto.setImageResource(fruitItem.getFruitItemImage());
-        ivPhoto.setTag("" + fruitItem.getFruitItemImage());
+        ivPhoto.setImageResource(fruit.getFruitPhoto());
+        ivPhoto.setTag("" + fruit.getFruitPhoto());
 
-        tvName.setText(fruitItem.getFruitItemTitle());
-        tvDesc.setText(fruitItem.getFruitItemDesc());
+        tvName.setText(fruit.getFruitName());
+        tvDesc.setText(fruit.getFruitDesc());
         Button btCancel = dialog.findViewById(R.id.btCancel);
         btCancel.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -237,7 +249,7 @@ public class MainActivity extends AppCompatActivity {
                 {
                     Intent intent = new Intent(Intent.ACTION_SEND);
                     intent.setType("text/plain");
-                    intent.putExtra(Intent.EXTRA_TEXT, " שתף מידע " + fruitItem.getFruitItemTitle());
+                    intent.putExtra(Intent.EXTRA_TEXT, " שתף מידע " + fruit.getFruitName());
                     Intent shareIntent = Intent.createChooser(intent, null);
                     startActivity(shareIntent);
                 }
@@ -255,7 +267,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 else if (value.equals("חפש בגוגל"))
                 {
-                    String query = fruitItem.getFruitItemTitle();
+                    String query = fruit.getFruitName();
                     Intent intent = new Intent(Intent.ACTION_VIEW,
                             Uri.parse("https://www.google.com/search?q=" +  Uri.encode(query)));
                     startActivity(intent);
@@ -307,13 +319,15 @@ public class MainActivity extends AppCompatActivity {
                         .setAction("בטל פעולה", new View.OnClickListener() {
                             @Override
                             public void onClick(View view) {
-                                arrayList.add(positionFruit, fruitItemRemove);
+                                list.add(positionFruit, fruitRemove);
                                 adapter.notifyItemInserted(positionFruit);
                                 rvFruits.scrollToPosition(positionFruit);
                             }
                         });
                 snackbar.show();
-                arrayList.remove(positionFruit);
+                Fruit fruit = list.get(positionFruit);
+                database.fruitDao().delete(fruit);
+                list.remove(positionFruit);
                 adapter.notifyItemRemoved(positionFruit);
             }
         }
@@ -321,24 +335,25 @@ public class MainActivity extends AppCompatActivity {
 
     public void showFrruits()
     {
-        arrayList = getArrayList();
-        adapter = new AdapterFruit(arrayList);
+        list = database.fruitDao().getAll();
+        adapter = new AdapterFruit(this, list);
         rvFruits.setAdapter(adapter);
         rvFruits.setLayoutManager(new LinearLayoutManager(this));
     }
 
 
-    private ArrayList<FruitItem> getArrayList()
-    {
-        ArrayList<FruitItem> arrayList = new ArrayList<>();
-        arrayList.add(new FruitItem("תפוח עץ","פרי הדר",R.drawable.apple));
-        arrayList.add(new FruitItem("תפוז","פרי הדר",R.drawable.orange));
-        arrayList.add(new FruitItem("מנגו","פרי טרופי",R.drawable.mango));
-        arrayList.add(new FruitItem("ליצי","פרי טרופי",R.drawable.lichi));
-        arrayList.add(new FruitItem("אגס","פרי הדר",R.drawable.pear));
 
-        return arrayList;
-    }
+//    private ArrayList<FruitItem> getArrayList()
+//    {
+//        ArrayList<FruitItem> arrayList = new ArrayList<>();
+//        arrayList.add(new FruitItem("תפוח עץ","פרי הדר",R.drawable.apple));
+//        arrayList.add(new FruitItem("תפוז","פרי הדר",R.drawable.orange));
+//        arrayList.add(new FruitItem("מנגו","פרי טרופי",R.drawable.mango));
+//        arrayList.add(new FruitItem("ליצי","פרי טרופי",R.drawable.lichi));
+//        arrayList.add(new FruitItem("אגס","פרי הדר",R.drawable.pear));
+//
+//        return arrayList;
+//    }
 
     @Override
     protected void onStart() {

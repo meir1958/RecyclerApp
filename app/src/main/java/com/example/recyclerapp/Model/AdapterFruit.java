@@ -1,5 +1,6 @@
 package com.example.recyclerapp.Model;
 
+import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,17 +11,24 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.recyclerapp.DataBaseFolder.Fruit;
+import com.example.recyclerapp.DataBaseFolder.FruitDatabase;
 import com.example.recyclerapp.R;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class AdapterFruit extends RecyclerView.Adapter<AdapterFruit.MyViewHolder> {
 
-    private ArrayList<FruitItem> arrayList;
+    private Context context;
+    private List<Fruit> list;
+    private FruitDatabase database;
 
-    public AdapterFruit(ArrayList<FruitItem> arrayList)
+    public AdapterFruit(Context context,List<Fruit> list)
     {
-        this.arrayList = arrayList;
+        this.context = context;
+        this.list = list;
+        database = FruitDatabase.getDatabase(context);
     }
 
     @NonNull
@@ -35,11 +43,11 @@ public class AdapterFruit extends RecyclerView.Adapter<AdapterFruit.MyViewHolder
     @Override
     public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
 
-        FruitItem fruitItem = arrayList.get(position);
-        holder.ivFruit.setImageResource(fruitItem.getFruitItemImage());
-        holder.tvTitle.setText(fruitItem.getFruitItemTitle());
-        holder.tvDesc.setText(fruitItem.getFruitItemDesc());
-        boolean newFavorite = fruitItem.isFavorite();
+        Fruit fruit = list.get(position);
+        holder.ivFruit.setImageResource(fruit.getFruitPhoto());
+        holder.tvTitle.setText(fruit.getFruitName());
+        holder.tvDesc.setText(fruit.getFruitDesc());
+        boolean newFavorite = fruit.isFruitFavorit();
 
         if(!newFavorite)holder.ivHurt.setImageResource(R.drawable.hurt_white);
         else holder.ivHurt.setImageResource(R.drawable.hurt_red);
@@ -55,8 +63,12 @@ public class AdapterFruit extends RecyclerView.Adapter<AdapterFruit.MyViewHolder
         holder.ivHurt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                boolean newFavorite = fruitItem.isFavorite();
-                fruitItem.setFavorite(!newFavorite);
+                Fruit fruit1 = database.fruitDao().getFruitById(fruit.getFruitId());
+                boolean isFavorit = fruit1.isFruitFavorit();
+                fruit1.setFruitFavorit(!isFavorit);
+                database.fruitDao().update(fruit1);
+
+                fruit.setFruitFavorit(!newFavorite);
                 notifyItemChanged(holder.getAdapterPosition());
             }
         });
@@ -64,7 +76,7 @@ public class AdapterFruit extends RecyclerView.Adapter<AdapterFruit.MyViewHolder
 
     @Override
     public int getItemCount() {
-        return arrayList.size();
+        return list.size();
     }
 
     public class MyViewHolder extends RecyclerView.ViewHolder {
